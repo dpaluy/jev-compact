@@ -1,0 +1,6 @@
+node_modules/
+.env
+.env.*
+*.jsonl
+*.jev-prune/
+eval/results/

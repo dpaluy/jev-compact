@@ -1,0 +1,36 @@
+{
+  "name": "jev-compact",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Audited, non-destructive tool-trace pruning for Pi",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dpaluy/jev-compact.git"
+  },
+  "homepage": "https://github.com/dpaluy/jev-compact#readme",
+  "bugs": "https://github.com/dpaluy/jev-compact/issues",
+  "engines": { "node": ">=22.20.0" },
+  "keywords": ["pi-package", "context", "pruning"],
+  "pi": { "extensions": ["./src/pi/extension.ts"] },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "eval": "tsx eval/run.ts",
+    "eval:project": "tsx eval/project.ts",
+    "check": "npm run typecheck && npm test && npm run eval"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-agent-core": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1",
+    "@types/node": "^22.0.0",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  }
+}
