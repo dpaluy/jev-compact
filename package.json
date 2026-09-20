@@ -20,8 +20,11 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
     "eval": "tsx eval/run.ts",
+    "eval:compare": "tsx eval/run.ts --compare",
+    "eval:replay": "tsx eval/run-replay.ts",
+    "eval:session": "tsx eval/run-session.ts",
     "eval:project": "tsx eval/project.ts",
-    "check": "npm run typecheck && npm test && npm run eval",
+    "check": "npm run typecheck && npm test && npm run eval && npm run eval:compare && npm run eval:replay",
     "prepublishOnly": "npm run typecheck && npm test"
   },
   "peerDependencies": {

@@ -89,3 +89,16 @@ This extension was inspired by [fast-jev-compaction](https://github.com/tamaratr
 | Failure or insufficient reduction | Keeps original context on failure; Pi compaction remains separate. | Falls back to the host's built-in summary. |
 
 The Pi version keeps retained tool results complete, but may free less space. Accuracy, speed, and cost differences have not been established by a live comparison.
+
+## Evaluation
+
+Run `npm run check` for tests and offline evaluations. `npm run eval:compare`
+compares required-evidence retention with recency at a common estimated-token
+ceiling. `npm run eval:replay` measures request coverage and outgoing context
+across long synthetic workloads or supplied context snapshots. `npm run eval:session`
+exports existing Pi session JSONL into private replay snapshots without changing
+the source.
+
+Offline scores do not measure Jev accuracy. Live scoring is opt-in and uses only
+synthetic fixtures. See [eval/README.md](eval/README.md) for commands, input format,
+and measurement limits.

@@ -4,6 +4,7 @@ import { fixtures } from "../eval/fixtures.js";
 import { evaluate } from "../eval/evaluate.js";
 import { evaluateScheduleCoverage } from "../eval/coverage.js";
 import { fakeScorer } from "./helpers.js";
+import type { Scorer } from "../src/core.js";
 
 for (const fixture of fixtures()) {
   test(`retention contract: ${fixture.id}`, async () => {
@@ -22,6 +23,26 @@ test("offline evaluation exercises bounded fair coverage and exact-request dedup
   assert.equal(result.passed, true);
   assert.equal(result.covered, result.candidates);
   assert.equal(result.duplicateRemoteRequests, 0);
+});
+
+for (const reason of ["context-too-large", "candidate-too-large", "request-budget"]) {
+  test(`evaluation counts unassessed candidates: ${reason}`, async () => {
+    const scorer: Scorer = { async score(_context, items) {
+      const result = await fakeScorer().score({}, items.slice(1));
+      result.skipped.set(items[0]!.id, reason);
+      return result;
+    } };
+    const result = await evaluate(fixtures()[0]!, scorer);
+    assert.equal(result.unscored, 1);
+    assert.ok(result.droppedTraces > 0, "partial assessment must not hide skipped candidates");
+  });
+}
+
+test("evaluation counts all eligible candidates after scoring fails", async () => {
+  const result = await evaluate(fixtures()[0]!, { async score() { throw new Error("offline failure"); } });
+  assert.equal(result.unscored, 4);
+  assert.equal(result.failure, "scoring-failed");
+  assert.equal(result.droppedTraces, 0);
 });
 
 test("evaluation detects a bad model drop rather than passing on pinned user text alone", async () => {

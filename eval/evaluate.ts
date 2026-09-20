@@ -11,10 +11,7 @@ function texts(messages: AgentMessage[]): string[] {
   });
 }
 
-export async function evaluate(fixture: Fixture, scorer: Scorer) {
-  const snapshot = snapshotPi(fixture.messages, "Preserve all task requirements verbatim.", "/work/rubric_llm", 2);
-  const plan = await planPrune(snapshot.items, snapshot.context, scorer, DEFAULT_POLICY);
-  const messages = snapshot.apply(plan.dropped);
+export function measureRetention(fixture: Fixture, messages: AgentMessage[]) {
   const retained = fixture.constraints.filter(constraint => {
     const source = constraint.source === "tool"
       ? messages.filter(message => message.role === "toolResult" && message.toolCallId === constraint.itemId.slice("tool:".length))
@@ -22,20 +19,28 @@ export async function evaluate(fixture: Fixture, scorer: Scorer) {
         const original = fixture.messages[Number(constraint.itemId.slice("message:".length))];
         return message.role === "user" && JSON.stringify(message) === JSON.stringify(original);
       });
-    return plan.decisions.some(d => d.itemId === constraint.itemId && d.action === "keep") &&
-      texts(source).some(text => text.includes(constraint.text));
+    return texts(source).some(text => text.includes(constraint.text));
   });
+  return {
+    retained: retained.length, constraints: fixture.constraints.length,
+    toolConstraintsRetained: retained.filter(c => c.source === "tool").length,
+    toolConstraints: fixture.constraints.filter(c => c.source === "tool").length,
+  };
+}
+
+export async function evaluate(fixture: Fixture, scorer: Scorer) {
+  const snapshot = snapshotPi(fixture.messages, "Preserve all task requirements verbatim.", "/work/rubric_llm", 2);
+  const plan = await planPrune(snapshot.items, snapshot.context, scorer, DEFAULT_POLICY);
+  const messages = snapshot.apply(plan.dropped);
   const beforeBytes = Buffer.byteLength(JSON.stringify(fixture.messages));
   const afterBytes = Buffer.byteLength(JSON.stringify(messages));
   return {
-    fixture: fixture.id, retained: retained.length, constraints: fixture.constraints.length,
-    toolConstraintsRetained: retained.filter(c => c.source === "tool").length,
-    toolConstraints: fixture.constraints.filter(c => c.source === "tool").length,
+    fixture: fixture.id, ...measureRetention(fixture, messages),
     beforeBytes, afterBytes, byteReduction: 1 - afterBytes / beforeBytes,
     droppedTraces: plan.dropped.size, scoringRequests: plan.requests,
     scoringInputTokens: plan.inputTokens, scoringOutputTokens: plan.outputTokens,
     models: [...new Set(plan.decisions.flatMap(d => d.model ? [d.model] : []))],
-    unscored: plan.decisions.filter(d => ["request-too-large", "request-budget", "scoring-failed"].includes(d.reason)).length,
+    unscored: plan.outcome.skipped,
     failure: plan.failure ?? null,
   };
 }

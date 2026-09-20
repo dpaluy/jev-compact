@@ -1,4 +1,5 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { estimateTokens } from "@earendil-works/pi-coding-agent";
 import { assistant, call, result, user } from "../test/helpers.js";
 
 export interface Fixture {
@@ -42,5 +43,23 @@ export function fixtures(): Fixture[] {
         { source: "tool", itemId: `tool:${requiredTraceId}`, text: fact },
       ],
     };
+  });
+}
+
+/** Equalize pair sizes so recency cannot identify the required trace just because
+ * it is the only small result. These remain synthetic, labeled contract checks.
+ */
+export function comparisonFixtures(): Fixture[] {
+  return fixtures().map(fixture => {
+    const pairs = fixture.messages.flatMap((message, index) => message.role === "toolResult"
+      ? [{ call: fixture.messages[index - 1]!, result: message }] : []);
+    const target = Math.max(...pairs.map(pair => estimateTokens(pair.call) + estimateTokens(pair.result)));
+    for (const pair of pairs) {
+      const block = pair.result.content[0];
+      if (block?.type !== "text") throw new Error("Comparison fixtures require text results");
+      const paddingTokens = target - estimateTokens(pair.call) - estimateTokens(pair.result);
+      block.text += " ".repeat(paddingTokens * 4);
+    }
+    return fixture;
   });
 }
